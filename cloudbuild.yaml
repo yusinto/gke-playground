@@ -1,0 +1,17 @@
+steps:
+- name: gcr.io/cloud-builders/docker
+  id: docker-build
+  args: [build, "-t", "gcr.io/gke-playground/$BRANCH_NAME:latest", "."]
+
+- name: gcr.io/cloud-builders/kubectl
+  id: deploy-infrastructure
+  env: ['CLOUDSDK_COMPUTE_ZONE=australia-southeast1-a', 'CLOUDSDK_CONTAINER_CLUSTER=features']
+  entrypoint: bash
+  args:
+  - '-c'
+  - |
+    sed -e "s|_BRANCH_NAME|$BRANCH_NAME|g" deployment-template.yaml | tee deployment.yaml
+    gcloud container clusters get-credentials --project="gke-playground" --zone="australia-southeast1-a" "features"
+    kubectl apply -f deployment.yaml
+
+images: ["gcr.io/gke-playground/$BRANCH_NAME:latest"]
